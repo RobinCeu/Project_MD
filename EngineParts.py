@@ -6,6 +6,8 @@ Created on Tue Aug 25 17:45:22 2020
 @version : 1.0
 """
 
+'TESTEST'
+
 from SolidsLibrary import Solids
 import numpy as np
 
