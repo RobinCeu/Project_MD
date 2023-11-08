@@ -66,7 +66,13 @@ class ReynoldsSolver:
         SetNeumannRight=self.Discretization.SetNeumannRight
         
         #define your own when desired
-        
+        P = np.zeros(self.MaxIter+1)
+             '''StateVector[time] is the State at time 
+             The pressure distribution where the iteration starts is 
+             the pressure distribution at the State corresponding to 
+             the previous time step '[time-1]'
+             Which is expressed as StateVector[time-1]'''
+        P[0] = StateVector[time-1].Pressure 
         #3. Iterate
 
         k=0
@@ -74,6 +80,8 @@ class ReynoldsSolver:
         
      
             #0. Calc Properties
+
+            
 
         
             #1. LHS Pressure
@@ -87,7 +95,23 @@ class ReynoldsSolver:
             
             #4. Solve System for Pressure + Update
 
-            
+                '''result of the solver is P_star'''
+                '''In Delta_P equation (68) is the calculated P_star compared to zero-values
+                The dimensions of P_star and the zero array need to be the same 
+                That's why the zero array is defined in function of the Grid.x array.
+                In 'SolutionState.py', the pressure state is also defined with Grid.x
+                This way, every array (here: P_star, State.pressure, and 0.0*self.Grid.x) 
+                has the same dimensions.'''
+            Delta_P = np.maximum(P_star, 0.0*self.Grid.x) - P[k]
+            P[k+1] = P[k]
+
+                '''Update Statevector variable for current time step 'time' '''
+            StateVector[time].Pressure 
+
+                '''Later on: Update Statevector variable temperature as well'''
+
+
+
             #5. LHS Temperature
 
             
