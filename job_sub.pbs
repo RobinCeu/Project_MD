@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#PBS -N machine-design
+#PBS -o output.log
+#PBS -e error.log
+#PBS -l walltime=72:00:00
+#PBS -l mem=16g
+#PBS -l nodes=1:ppn=1
+
+cd $PBS_O_WORKDIR  
+
+module load Python/3.9.6-GCCcore-11.2.0
+module load matplotlib/3.4.3-foss-2021b
+module load SciPy-bundle/2021.10-foss-2021b
+module load h5py/3.6.0-foss-2021b
+
+python -m Main.py > ProgramOutput.txt
