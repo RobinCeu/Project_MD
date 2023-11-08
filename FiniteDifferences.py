@@ -16,6 +16,7 @@ class FiniteDifferences:
 #################
 ##### TO DO #####
 #################
+
     def __init__(self,Grid):
         
         #Schemes for first-order (D) and second order ( DD) derivatives
