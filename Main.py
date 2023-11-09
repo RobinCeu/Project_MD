@@ -54,7 +54,7 @@ IO=IOHDF5()
 EngineType='VW 2.0 R4 16v TDI CR 103kW'
 OilTemperature=95.0 #C
 EngineRPM=2400.0 #rpm
-EngineAcceleration=0.0;
+EngineAcceleration=0.0
 
 
 """ Define Engine Geometry"""
@@ -95,17 +95,17 @@ Discretization=FiniteDifferences(Grid)
 
 
 """ Initialize Reynolds Solver"""
-MaxIterReynolds=5000;
-TolP=1e-4;
-UnderRelaxP=0.001;
-TolT=1e-4;
-UnderRelaxT=0.01;
+MaxIterReynolds=5000
+TolP=1e-4
+UnderRelaxP=0.001
+TolT=1e-4
+UnderRelaxT=0.01
 Reynolds=ReynoldsSolver(Grid,Time,Ops,Mixture,Discretization)
 Reynolds.SetSolver(MaxIterReynolds,TolP,UnderRelaxP,TolT,UnderRelaxT,VisualFeedbackLevel)
 
 """ Set Load Balance loop"""
 MaxIterLoad=40
-Tolh0=1e-3;
+Tolh0=1e-3
 UnderRelaxh0=0.2
 
 """Start from Initial guess or Load Initial State"""
@@ -150,8 +150,8 @@ else:
     StateVector[time].ViscousFriction=0.0
     
     Contact.AsperityContact(StateVector,time)
-    StateVector[time].COF=0.0;
-    StateVector[time].WearDepthRing=0.0;
+    StateVector[time].COF=0.0
+    StateVector[time].WearDepthRing=0.0
     StateVector[time].WearLocationsCylinder=np.unique(np.round(Ops.PistonPosition,8));       
     StateVector[time].WearDepthCylinder=0.0*StateVector[time].WearLocationsCylinder; 
     
@@ -175,7 +175,14 @@ while time<Time.nt:
     
     """Start Load Balance Loop"""
     #TODO
-    while (): 
+    eps_h_0 = 1
+    i = 1
+    
+    h_0 = StateVector[time-1].h0
+    press = StateVector[time-1].Pressure
+    temp = StateVector[time-1].Temperature
+
+    while (eps_h_0 > Tolh0 and i <MaxIterLoad): 
     
         """a. Calculate Film Thickness Profile"""
         StateVector[time].h=

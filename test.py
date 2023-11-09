@@ -1,2 +1,4 @@
 
-"hallo"
+while(True):
+    print("hallo")
+
