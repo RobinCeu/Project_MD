@@ -1,4 +1,8 @@
+import numpy as np
 
-while(True):
-    print("hallo")
+"hallo"
 
+"hallo"
+
+x = np.linspace(-9,9,256)
+0.0*x
