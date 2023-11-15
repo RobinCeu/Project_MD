@@ -185,10 +185,10 @@ while time<Time.nt:
     while (eps_h_0 > Tolh0 and i <MaxIterLoad): 
     
         """a. Calculate Film Thickness Profile"""
-        StateVector[time].h=
-        
+        StateVector[time].h= StateVector[time-1].h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
+
         """b. Calculate Asperity Load"""
-        StateVector[time].Lambda = 
+        StateVector[time].Lambda =  h_0/Contact.Roughness
         Contact.AsperityContact(StateVector,time)
         
         """c. Solve Reynolds""" 
