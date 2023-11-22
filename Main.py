@@ -25,7 +25,11 @@ import matplotlib.pyplot as plt
 import numpy as np 
 import copy as copy
 
+from scipy.interpolate import interp1d
+from scipy.integrate import quad
+
 from EngineParts import Engine  #import all classes from file
+from SolidsLibrary import Solids
 from TriboContact import TriboContact #import all classes from file
 from Grid import Grid #import all classes from file
 from Time import Time #import all classes from file
@@ -195,7 +199,22 @@ while time<Time.nt:
         Reynolds.SolveReynolds(StateVector,time)
         
         """d. Newton Raphson Iteration to find the h0"""
-         
+        Engine.CompressionRing.FreeGapSize
+        
+        F_el = 16*Engine.CompressionRing.FreeGapSize*Solids('Nitrided Stainless Steel').YoungsModulus*(Engine.CompressionRing.Thickness*Engine.CompressionRing.Width**3/12)/(3*m.pi*(Engine.Cylinder.Radius*2)**4)
+        F_comp = Engine.CompressionRing.Thickness*(Ops.CylinderPressure-Ops.AtmosphericPressure)
+        
+        #Integratie voor W_hyd (p(x)  interpoleren en over grid(x) integreren)
+        y_values = press
+        x_values = Grid.x
+        p_x = interp1d(x_values, y_values, kind='linear', fill_value='extrapolate')
+        def integrand(x):
+            return p_x(x)
+        W_hyd, W_hyd_error = quad(integrand, x_values[0], x_values[-1])
+        # Dit moet in reynolds^^
+
+        D_W = StateVector[time].HydrodynamicLoad + StateVector[time].AsperityContactPressure - F_el - F_comp
+
         """e. Update & Calculate Residual"""      
         
        
