@@ -38,7 +38,7 @@ from FluidLibrary import Liquid,Gas #import all classes from file
 from TwoPhaseModel import CavitationModel 
 from SolutionState import State #import all classes from file
 from FiniteDifferences import FiniteDifferences
-from ReynoldsSolver import ReynoldsSolver
+from ReynoldsOliver import ReynoldsSolver
 from IOHDF5 import IOHDF5
 import time as TimeKeeper
 import VisualLib as vis
@@ -70,7 +70,7 @@ Contact=TriboContact(Engine)
 
 
 """1D Computational Grid"""
-Nodes=256;
+Nodes=10
 Grid=Grid(Contact,Nodes)
 
 """Temporal Discretization"""
@@ -110,7 +110,7 @@ Reynolds.SetSolver(MaxIterReynolds,TolP,UnderRelaxP,TolT,UnderRelaxT,VisualFeedb
 """ Set Load Balance loop"""
 MaxIterLoad=40
 Tolh0=1e-3
-UnderRelaxh0=0.2
+UnderRelaxh0=0.25
 
 """Start from Initial guess or Load Initial State"""
 
@@ -217,10 +217,11 @@ while time<Time.nt:
         
         D_W_l.append(StateVector[time].HydrodynamicLoad + StateVector[time].AsperityContactPressure - F_el - F_comp)
         h_0_l
-        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))(*(h_0_l[-1]-h_0_l[-2)]) , 0.1*m.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2)))
+        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))(*(h_0_l[-1]-h_0_l[-2]) , 0.1*m.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2))))
         """e. Update & Calculate Residual"""      
         
-       
+        i += 1
+        eps_h_0 = abs(h_0_l[-1]/h_0_l[-2]-1)
         """Load Balance Output""" 
         print("Load Balance:: Residuals [h0] @Time:",round(Time.t[time]*1000,5),"ms & Iteration:",k,"-> [",np.round(epsh0[k],2+int(np.abs(np.log10(Tolh0)))),"]\n")
         if VisualFeedbackLevel>1:
@@ -244,8 +245,8 @@ while time<Time.nt:
     
     """ Calculate Ohter Variables of Interest, e.g. COF wear"""
     #TODO
-    StateVector[time].Hersey=
-    StateVector[time].COF=
+    StateVector[time].Hersey= Mixture.DynamicViscosity(StateVector[time])*np.abs(Ops.PistonVelocity[time])/np.abs(Ops.CompressionRingLoad[time])
+    StateVector[time].COF= 0.001
     Contact.Wear(Ops,Time,StateVector,time)
  
     

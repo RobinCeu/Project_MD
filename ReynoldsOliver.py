@@ -57,7 +57,7 @@ class ReynoldsSolver:
         ViscosityFunc  =self.FluidModel.DynamicViscosity
         SpecHeatFunc   =self.FluidModel.SpecificHeatCapacity
         ConducFunc     =self.FluidModel.ThermalConductivity      
-        PreviousDensity    =self.FluidModel.Density(StateVector[time-1]) " state on time - 1"
+        PreviousDensity    =self.FluidModel.Density(StateVector[time-1]) #" state on time - 1"
         
         " calls FiniteDifferences class "
         DDX=self.Discretization.DDXCentral
@@ -92,7 +92,8 @@ class ReynoldsSolver:
             " find A "
             " phi based on formula (16) "
             CurState = StateVector[time]
-            h3 = np.power(CurState.h,3) " state corresponding to t (and iteration k) --> height (array) "
+            h3 = np.power(CurState.h,3) 
+            " state corresponding to t (and iteration k) --> height (array) "
             Densh3 = DensityFunc*h3
             phi = Densh3/ViscosityFunc/12
 

@@ -10,6 +10,7 @@ import numpy as np
 import scipy.special as special # Sparse Matrix Definitions and operations
 import scipy.integrate as integral # Sparse Matrix Definitions and operations
 from EngineParts import Engine
+from SolidsLibrary import Solids
 
 from scipy.interpolate import interp1d
 from scipy.integrate import quad
@@ -20,7 +21,7 @@ class TriboContact:
 
         self.l_c = 2.2239
         self.Engine=Engine
-        
+    
         """ Equivalent Young's modulus of Hertzian contact"""
         self.YoungsModulus=1.0/((1.0-Engine.Cylinder.Material.PoissonModulus**2.0)/Engine.Cylinder.Material.YoungsModulus + (1.0-Engine.CompressionRing.Material.PoissonModulus**2)/Engine.CompressionRing.Material.YoungsModulus);
         self.Domain=np.array([-Engine.CompressionRing.Thickness/2,Engine.CompressionRing.Thickness/2])
@@ -59,30 +60,35 @@ class TriboContact:
     
     def load_integrand(self, x):
         return self.I52(x)*x**(-0.5)
-
+    
 
 #################
 ##### TO DO #####
 #################
     def AsperityContact(self,StateVector,time):
-
         Lambda=StateVector[time].Lambda
         l_0 = min(StateVector[time].h0/self.Roughness,self.l_c)
         StateVector[time].AsperityArea= np.pi**2*(self.RoughnessParameter)**2*np.pi*2*self.Engine.Cylinder.Radius*np.sqrt((self.Engine.CompressionRing.Thickness**2*self.Roughness)/(4*self.Engine.CompressionRing.CrownHeight))*quad(self.area_integrand, l_0, self.l_c)
         StateVector[time].AsperityLoad= 16/15*np.sqrt(2)*np.pi*(self.RoughnessParameter)**2*np.sqrt(self.Roughness/self.Kappa)*self.YoungsModulus*np.sqrt(self.Roughness*self.Engine.CompressionRing.Thickness**2/(4*self.CompressionRing.CrownHeight))*quad(self.load_integrand,l_0,self.l_c)
         StateVector[time].AsperityFriction=self.Tau0*StateVector[time].AsperityArea/(np.pi*self.Engine.cylinder.Radius*2)+self.f_b*StateVector[time].AsperityLoad
         StateVector[time].AsperityContactPressure= StateVector[time].AsperityLoad/StateVector[time].AsperityArea
-        StateVector[time].HertzianContactPressure=np.pi/4*np.sqrt(StateVector[time].AsperityLoad*self.YoungsModulus/(np.pi*self.RoughnessSlope))
+        StateVector[time].HertzianContactPressure=np.pi/4*np.sqrt(StateVector[time].AsperityLoad*self.YoungsModulus/(np.pi*self.Engine.CompressionRing.CrownHeight))
 
         
         
 #################
 ##### TO DO #####
-#################       
+#################    
+   
     def Wear(self,Ops,Time,StateVector,time):
-        
+        self.Ops = Ops 
         # Calculate Wear Depth on the Piston Ring  
-        StateVector[time].WearDepthRing= # accumulated wear depth on the ring
+        # accumulated wear depth on the ring:
+        def wear_depth_ring_integrand():
+            return StateVector[time].HertzianContactPressure/Solids('Nitrided Stainless Steel').Hardness
+        s_t =  Ops.SlidingDistance
+        StateVector[time].WearDepthRing= self.WearCoefficient_CompressionRing*quad(self.wear_depth_ring_integrand, 0, s_t)
         # Calculate The Wear Depth on the Cylinder wall
-        StateVector[time].WearLocationsCylinder= # array of unique Positions where the pistion passes by  
-        StateVector[time].WearDepthCylinder= #incremental wear depth on the positions in the array above
+        # array of unique Positions where the pistion passes by:
+        StateVector[time].WearLocationsCylinder= 35
+        StateVector[time].WearDepthCylinder= 35 #incremental wear depth on the positions in the array above
