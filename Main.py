@@ -183,6 +183,8 @@ while time<Time.nt:
     i = 1
     
     h_0 = StateVector[time-1].h0
+    h_0_l = [h_0]
+    D_W_l = []
     press = StateVector[time-1].Pressure
     temp = StateVector[time-1].Temperature
 
@@ -212,9 +214,10 @@ while time<Time.nt:
             return p_x(x)
         W_hyd, W_hyd_error = quad(integrand, x_values[0], x_values[-1])
         # Dit moet in reynolds^^
-
-        D_W = StateVector[time].HydrodynamicLoad + StateVector[time].AsperityContactPressure - F_el - F_comp
-
+        
+        D_W_l.append(StateVector[time].HydrodynamicLoad + StateVector[time].AsperityContactPressure - F_el - F_comp)
+        h_0_l
+        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))(*(h_0_l[-1]-h_0_l[-2)]) , 0.1*m.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2)))
         """e. Update & Calculate Residual"""      
         
        
