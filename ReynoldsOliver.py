@@ -15,6 +15,9 @@ import VisualLib as vis
 from scipy.sparse.linalg import inv
 from scipy.sparse.linalg import spsolve
 
+from scipy.interpolate import interp1d
+from scipy.integrate import quad
+
 class ReynoldsSolver:
     def __init__(self,Grid,Time,Ops,FluidModel,Discretization):
         self.MaxIter=[]
@@ -53,10 +56,10 @@ class ReynoldsSolver:
         
         
         #2. Predefine variables outside loop for Computational Efficiency
-        DensityFunc    =self.FluidModel.Density
-        ViscosityFunc  =self.FluidModel.DynamicViscosity
-        SpecHeatFunc   =self.FluidModel.SpecificHeatCapacity
-        ConducFunc     =self.FluidModel.ThermalConductivity      
+        DensityFunc    =self.FluidModel.Density(StateVector[time])
+        ViscosityFunc  =self.FluidModel.DynamicViscosity(StateVector[time])
+        SpecHeatFunc   =self.FluidModel.SpecificHeatCapacity(StateVector[time])
+        ConducFunc     =self.FluidModel.ThermalConductivity(StateVector[time])  
         PreviousDensity    =self.FluidModel.Density(StateVector[time-1]) #" state on time - 1"
         
         " calls FiniteDifferences class "
@@ -80,10 +83,10 @@ class ReynoldsSolver:
             " when not in the first iteration, the values will be calculated based on the newly found state (press, temp) and calculated using the " 
             " cavitationmodel class in TwoPhaseModel.py "
             #0. Calc Properties
-            DensityFunc    =self.FluidModel.Density
-            ViscosityFunc  =self.FluidModel.DynamicViscosity
-            SpecHeatFunc   =self.FluidModel.SpecificHeatCapacity
-            ConducFunc     =self.FluidModel.ThermalConductivity
+            DensityFunc    =self.FluidModel.Density(StateVector[time])
+            ViscosityFunc  =self.FluidModel.DynamicViscosity(StateVector[time])
+            SpecHeatFunc   =self.FluidModel.SpecificHeatCapacity(StateVector[time])
+            ConducFunc     =self.FluidModel.ThermalConductivity(StateVector[time])
 
             p_carter = self.Ops.AtmosphericPressure
         
@@ -111,23 +114,24 @@ class ReynoldsSolver:
             M = A+B
             
             #2. RHS Pressure
-            U = self.Ops.SlidingVelocity
+            U = self.Ops.SlidingVelocity[time]
             h_Density = CurState.h*DensityFunc
 
             PrevState = StateVector[time-1]
             dt = self.Time.dt
             h_Density_Diff = (CurState.h*DensityFunc - PrevState.h*PreviousDensity)/dt
+
             RHS = (U/2)*DDX*h_Density + h_Density_Diff
 
             #3. Set Boundary Conditions Pressure
             " Dirichlet on M as coded in FiniteDifferences "
             " M is new M with left (right) Dirichlet? "
-            M = SetDirichletLeft(M)
-            M = SetDirichletRight(M)
+            SetDirichletLeft(M)
+            SetDirichletRight(M)
 
             " Boundary conditions on RHS "
             RHS[0] = p_carter-self.Ops.AtmosphericPressure
-            RHS[self.Grid.Nx-1] = self.Ops.CylinderPressure-self.Ops.AtmosphericPressure
+            RHS[self.Grid.Nx-1] = self.Ops.CylinderPressure[time]-self.Ops.AtmosphericPressure
 
             #4. Solve System for Pressure + Update
             P_sol = spsolve(M,RHS)
@@ -146,8 +150,8 @@ class ReynoldsSolver:
 
             " substitute this in the average velocity equation (22) "
             u = -(CurState.h**2)*d_pressure/phi/12+U/2
-            u_plus = np.max(u,0)
-            u_min = np.min(u,0)
+            u_plus = np.maximum(u,0)
+            u_min = np.minimum(u,0)
             D1 = sparse.diags(u_plus*dt)*DDXBackward
             D2 = sparse.diags(u_min*dt)*DDXForward
             D = D1 + D2
@@ -179,8 +183,8 @@ class ReynoldsSolver:
 
             if U > 0:
                 " right Neumann, left Dirichlet "
-                M2 = SetDirichletLeft(M2)
-                M2 = SetNeumannRight(M2)
+                SetDirichletLeft(M2)
+                SetNeumannRight(M2)
                 " boundary conditions on RHS "
                 RHS_T[0] = self.Ops.OilTemperature
                 RHS_T[-1] = 0.0
@@ -197,8 +201,8 @@ class ReynoldsSolver:
             StateVector[time].Temperature = T_new
             
             #10. Residuals & Report
-            epsP[k] = linalg.norm(delta_P/P_new)/self.Grid.Nx
-    
+            epsP[k] = np.linalg.norm(delta_P/P_new)/self.Grid.Nx
+            epsT[k] = np.linalg.norm(delta_T/T_new)/self.Grid.Nx
            
             #11. Provide a plot of the solution
             # 10. Provide a plot of the solution
@@ -220,16 +224,11 @@ class ReynoldsSolver:
 
             
         #12. Calculate other quantities (e.g. Wall Shear Stress, Hydrodynamic Load, ViscousFriction)
-
-
-
-
-
-# #Integratie voor W_hyd (p(x)  interpoleren en over grid(x) integreren)
-#         y_values = press
-#         x_values = Grid.x
-#         p_x = interp1d(x_values, y_values, kind='linear', fill_value='extrapolate')
-#         def integrand(x):
-#             return p_x(x)
-#         W_hyd, W_hyd_error = quad(integrand, x_values[0], x_values[-1])
-#         # Dit moet in reynolds^^
+        
+        y_values = StateVector[time-1].Pressure
+        x_values = self.Grid.x
+        p_x = interp1d(x_values, y_values, kind='linear', fill_value='extrapolate')
+        def integrand(x):
+            return p_x(x)
+        W_hyd, W_hyd_error = quad(integrand, x_values[0], x_values[-1])
+        StateVector[time].HydrodynamicLoad = W_hyd 

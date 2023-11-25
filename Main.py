@@ -183,6 +183,7 @@ while time<Time.nt:
     i = 1
     
     h_0 = StateVector[time-1].h0
+    print('aaaaaaaaa: ',StateVector[time].h0)
     h_0_l = [h_0]
     D_W_l = []
     press = StateVector[time-1].Pressure
@@ -201,23 +202,15 @@ while time<Time.nt:
         Reynolds.SolveReynolds(StateVector,time)
         
         """d. Newton Raphson Iteration to find the h0"""
-        Engine.CompressionRing.FreeGapSize
-        
-        F_el = 16*Engine.CompressionRing.FreeGapSize*Solids('Nitrided Stainless Steel').YoungsModulus*(Engine.CompressionRing.Thickness*Engine.CompressionRing.Width**3/12)/(3*m.pi*(Engine.Cylinder.Radius*2)**4)
-        F_comp = Engine.CompressionRing.Thickness*(Ops.CylinderPressure-Ops.AtmosphericPressure)
-        
-        #Integratie voor W_hyd (p(x)  interpoleren en over grid(x) integreren)
-        y_values = press
-        x_values = Grid.x
-        p_x = interp1d(x_values, y_values, kind='linear', fill_value='extrapolate')
-        def integrand(x):
-            return p_x(x)
-        W_hyd, W_hyd_error = quad(integrand, x_values[0], x_values[-1])
-        # Dit moet in reynolds^^
+        F_el = 16*Engine.CompressionRing.FreeGapSize*Solids('Nitrided Stainless Steel').YoungsModulus*(Engine.CompressionRing.Thickness*Engine.CompressionRing.Width**3/12)/(3*np.pi*(Engine.Cylinder.Radius*2)**4)
+        F_comp = Engine.CompressionRing.Thickness*(Ops.CylinderPressure[time]-Ops.AtmosphericPressure)
         
         D_W_l.append(StateVector[time].HydrodynamicLoad + StateVector[time].AsperityContactPressure - F_el - F_comp)
-        h_0_l
-        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))(*(h_0_l[-1]-h_0_l[-2]) , 0.1*m.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2))))
+
+        print(h_0_l)
+        print(D_W_l)
+
+        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))(*(h_0_l[-1]-h_0_l[-2]) , 0.1*np.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2))))
         """e. Update & Calculate Residual"""      
         
         i += 1
