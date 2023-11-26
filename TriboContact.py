@@ -82,6 +82,7 @@ class TriboContact:
    
     def Wear(self,Ops,Time,StateVector,time):
         self.Ops = Ops 
+
         # Calculate Wear Depth on the Piston Ring  
         # accumulated wear depth on the ring:
         k = 1

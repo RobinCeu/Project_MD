@@ -179,17 +179,18 @@ while time<Time.nt:
     
     """Start Load Balance Loop"""
     #TODO
-    eps_h_0 = 1
+    eps_h_0 = [1]
     i = 1
     
     h_0 = StateVector[time-1].h0
-    print('aaaaaaaaa: ',StateVector[time].h0)
-    h_0_l = [h_0]
-    D_W_l = []
+    
+    # see Secant method (two initial guesses)
+    h_0_l = [h_0+1,h_0]
+    D_W_l = [0]
     press = StateVector[time-1].Pressure
     temp = StateVector[time-1].Temperature
 
-    while (eps_h_0 > Tolh0 and i <MaxIterLoad): 
+    while (eps_h_0[i-1] > Tolh0 and i <MaxIterLoad): 
     
         """a. Calculate Film Thickness Profile"""
         StateVector[time].h= StateVector[time-1].h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
@@ -205,22 +206,33 @@ while time<Time.nt:
         F_el = 16*Engine.CompressionRing.FreeGapSize*Solids('Nitrided Stainless Steel').YoungsModulus*(Engine.CompressionRing.Thickness*Engine.CompressionRing.Width**3/12)/(3*np.pi*(Engine.Cylinder.Radius*2)**4)
         F_comp = Engine.CompressionRing.Thickness*(Ops.CylinderPressure[time]-Ops.AtmosphericPressure)
         
-        D_W_l.append(StateVector[time].HydrodynamicLoad + StateVector[time].AsperityContactPressure - F_el - F_comp)
+        D_W_l.append(StateVector[time].HydrodynamicLoad + StateVector[time].AsperityLoad - F_el - F_comp)
+        
+        # Secant method assumes two initial guesses (arbitrary??)
 
-        print(h_0_l)
-        print(D_W_l)
+        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))*(h_0_l[-1]-h_0_l[-2]) , 0.1*np.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2)))
+        
 
-        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))(*(h_0_l[-1]-h_0_l[-2]) , 0.1*np.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2))))
+        
+
+
+
+
+
+
         """e. Update & Calculate Residual"""      
         
         i += 1
-        eps_h_0 = abs(h_0_l[-1]/h_0_l[-2]-1)
+        eps_h_0.append(abs(h_0_l[-1]/h_0_l[-2]-1))
+
+
+
         """Load Balance Output""" 
-        print("Load Balance:: Residuals [h0] @Time:",round(Time.t[time]*1000,5),"ms & Iteration:",k,"-> [",np.round(epsh0[k],2+int(np.abs(np.log10(Tolh0)))),"]\n")
+        print("Load Balance:: Residuals [h0] @Time:",round(Time.t[time]*1000,5),"ms & Iteration:",i,"-> [",np.round(eps_h_0[i-1],2+int(np.abs(np.log10(Tolh0)))),"]\n")
         if VisualFeedbackLevel>1:
            fig=vis.Report_PT(Grid,StateVector[time])                       
            if SaveFig2File:
-               figname="Figures/PT@Time_"+str(round(Time.t[time]*1000,5))+"ms_LoadIteration_"+str(k)+".png" 
+               figname="Figures/PT@Time_"+str(round(Time.t[time]*1000,5))+"ms_LoadIteration_"+str(i)+".png" 
                fig.savefig(figname, dpi=300)  
            plt.close(fig)         
     

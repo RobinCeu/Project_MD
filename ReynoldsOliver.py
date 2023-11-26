@@ -175,8 +175,8 @@ class ReynoldsSolver:
             #7. Set Boundary Conditions Temperature
             if U <= 0:
                 " left Neumann, right Dirichlet "
-                M2 = SetDirichletRight(M2)
-                M2 = SetNeumannLeft(M2)
+                SetDirichletRight(M2)
+                SetNeumannLeft(M2)
                 " boundary conditions on RHS "
                 RHS_T[0] = 0.0
                 RHS_T[-1] = self.Ops.OilTemperature
@@ -206,6 +206,9 @@ class ReynoldsSolver:
            
             #11. Provide a plot of the solution
             # 10. Provide a plot of the solution
+
+            Uaveraged = np.mean(self.Ops.SlidingVelocity)
+             
             if (k % 500 == 0):
                 CFL=np.max(Uaveraged)*self.Time.dt/self.Grid.dx
                 print("ReynoldsSolver:: CFL", np.round(CFL,2) ,"Residual [P,T] @Time:",round(self.Time.t[time]*1000,5),"ms & Iteration:",k,"-> [",np.round(epsP[k],6),",",np.round(epsT[k],6),"]")
