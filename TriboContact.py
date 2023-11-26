@@ -84,10 +84,25 @@ class TriboContact:
         self.Ops = Ops 
         # Calculate Wear Depth on the Piston Ring  
         # accumulated wear depth on the ring:
-        def wear_depth_ring_integrand():
-            return StateVector[time].HertzianContactPressure/Solids('Nitrided Stainless Steel').Hardness
-        s_t =  Ops.SlidingDistance
-        StateVector[time].WearDepthRing= self.WearCoefficient_CompressionRing*quad(self.wear_depth_ring_integrand, 0, s_t)
+        k = 1
+        hertzian = [0]
+        while k <= time:
+            hertzian.append(StateVector[k].HertzianContactPressure)
+            k += 1
+        
+        # sliding velocity doesnt start from zero
+        hertzian = self.WearCoefficient_CompressionRing*np.array(hertzian)/Solids('Nitrided Stainless Steel').Hardness
+        s = Ops.SlidingDistance[:time]
+        s = np.concatenate(([0],s))
+
+        interp_func = interp1d(s, hertzian, kind='linear', fill_value='extrapolate')
+        def integrand(x):
+            return interp_func(x)
+        result, error = quad(integrand, s[0], s[time-1])
+        
+        StateVector[time].WearDepthRing = result
+        
+      
         # Calculate The Wear Depth on the Cylinder wall
         # array of unique Positions where the pistion passes by:
         StateVector[time].WearLocationsCylinder= 35
