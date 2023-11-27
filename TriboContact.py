@@ -106,5 +106,36 @@ class TriboContact:
       
         # Calculate The Wear Depth on the Cylinder wall
         # array of unique Positions where the pistion passes by:
-        StateVector[time].WearLocationsCylinder= 35
+        StateVector[time].WearLocationsCylinder= np.unique(np.round(Ops.PistonPosition,8)) 
+
         StateVector[time].WearDepthCylinder= 35 #incremental wear depth on the positions in the array above
+
+        t = 0
+        b = 10e-6 # crownheight
+        integrand_l = []
+
+        def integrand_generator(tijd):
+            return self.StateVector[tijd].HertzianContactPressure*self.Ops.PistonVelocity/Solids('Grey Cast Iron').Hardness
+
+        for i in range(len(StateVector[time].WearLocationsCylinder)):
+            integrand_l.append([])
+
+        for i in range(len(StateVector[time].WearLocationsCylinder)):
+            # If ring is currently over the point of intrest: add integrand and timestamp
+            if self.Ops.PistonPosition[time] < StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time] >StateVector[time].WearLocationsCylinder[i] - b/2:
+                integrand_l[i].append([integrand_generator(time), time])
+                # If in the previous timestamp the ring wasn't yet over the POI: add integrand and timestamp of when it first came in contact [add interpolation?]
+                if self.Ops.PistonPosition[time-1] > StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time-1] < StateVector[time].WearLocationsCylinder[i] - b/2:
+                    integrand_l[i].append([integrand_generator(time-1), time - abs(self.Ops.PistonPosition[time]+b/2-StateVector[time].WearLocationsCylinder[i])/self.Ops.Pistonvelocity])
+            # if previously the ring was over the POI but not now: add integrand and timestamp of when contact ends
+            if self.Ops.PistonPosition[time-1] < StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time-1] >StateVector[time].WearLocationsCylinder[i] - b/2:
+                if self.Ops.PistonPosition[time] > StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time] < StateVector[time].WearLocationsCylinder[i] - b/2:
+                    integrand_l[i].append([integrand_generator(time), time + abs(self.Ops.PistonPosition[time]+b/2-StateVector[time].WearLocationsCylinder[i])/self.Ops.Pistonvelocity])
+        
+
+        StateVector[time].WearDepthCylinder= 35 #incremental wear depth on the positions in the array above
+
+        
+
+
+ 
