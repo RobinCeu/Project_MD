@@ -97,6 +97,8 @@ class TriboContact:
         s = np.concatenate(([0],s))
 
         interp_func = interp1d(s, hertzian, kind='linear', fill_value='extrapolate')
+        
+        
         def integrand(x):
             return interp_func(x)
         result, error = quad(integrand, s[0], s[time-1])
@@ -117,23 +119,32 @@ class TriboContact:
         def integrand_generator(tijd):
             return self.StateVector[tijd].HertzianContactPressure*self.Ops.PistonVelocity/Solids('Grey Cast Iron').Hardness
 
-        for i in range(len(StateVector[time].WearLocationsCylinder)):
-            integrand_l.append([])
 
         for i in range(len(StateVector[time].WearLocationsCylinder)):
             # If ring is currently over the point of intrest: add integrand and timestamp
             if self.Ops.PistonPosition[time] < StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time] >StateVector[time].WearLocationsCylinder[i] - b/2:
-                integrand_l[i].append([integrand_generator(time), time])
-                # If in the previous timestamp the ring wasn't yet over the POI: add integrand and timestamp of when it first came in contact [add interpolation?]
+                integrand_l.append([integrand_generator(time), time])
+                # If in the previous timestep the ring wasn't yet over the POI: add integrand and timestamp of when it first came in contact and do incremental integration
                 if self.Ops.PistonPosition[time-1] > StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time-1] < StateVector[time].WearLocationsCylinder[i] - b/2:
-                    integrand_l[i].append([integrand_generator(time-1), time - abs(self.Ops.PistonPosition[time]+b/2-StateVector[time].WearLocationsCylinder[i])/self.Ops.Pistonvelocity])
+                    integrand_l.append([integrand_generator(time-1), time - abs(self.Ops.PistonPosition[time]+b/2-StateVector[time].WearLocationsCylinder[i])/self.Ops.Pistonvelocity])
+                    StateVector[time].WearDepthCylinder[i]  += (integrand_l[0][0]+integrand_l[1][0])/2*(integrand_l[1][1]-integrand_l[1][0])
+                    integrand_l = []
+                # If in the previous timestep the ring was also over the POI: do incremental integration
+                if self.Ops.PistonPosition[time-1] < StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time-1] >StateVector[time].WearLocationsCylinder[i] - b/2:
+                    integrand_l.append([integrand_generator(time-1), time])
+                    StateVector[time].WearDepthCylinder[i]  += (integrand_l[0][0]+integrand_l[1][0])/2*(integrand_l[1][1]-integrand_l[1][0])
+                    integrand_l = []
             # if previously the ring was over the POI but not now: add integrand and timestamp of when contact ends
             if self.Ops.PistonPosition[time-1] < StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time-1] >StateVector[time].WearLocationsCylinder[i] - b/2:
+                integrand_l.append([integrand_generator(time-1), time-1])
                 if self.Ops.PistonPosition[time] > StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time] < StateVector[time].WearLocationsCylinder[i] - b/2:
-                    integrand_l[i].append([integrand_generator(time), time + abs(self.Ops.PistonPosition[time]+b/2-StateVector[time].WearLocationsCylinder[i])/self.Ops.Pistonvelocity])
+                    integrand_l.append([integrand_generator(time), time + abs(self.Ops.PistonPosition[time]+b/2-StateVector[time].WearLocationsCylinder[i])/self.Ops.Pistonvelocity])
+                    StateVector[time].WearDepthCylinder[i]  += (integrand_l[0][0]+integrand_l[1][0])/2*(integrand_l[1][1]-integrand_l[1][0])
+                    integrand_l = []
         
 
-        StateVector[time].WearDepthCylinder= 35 #incremental wear depth on the positions in the array above
+        
+         #incremental wear depth on the positions in the array above
 
         
 
