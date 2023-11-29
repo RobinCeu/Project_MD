@@ -179,7 +179,11 @@ while time<Time.nt:
     
     """Start Load Balance Loop"""
     #TODO
-    eps_h_0 = 1
+    eps_h_0 = np.ones(MaxIterLoad+1)
+    W= np.zeros(MaxIterLoad+1)
+    h_0=
+    DW=
+
     i = 1
     
     h_0 = StateVector[time-1].h0
@@ -216,7 +220,7 @@ while time<Time.nt:
         i += 1
         eps_h_0 = abs(h_0_l[-1]/h_0_l[-2]-1)
         """Load Balance Output""" 
-        print("Load Balance:: Residuals [h0] @Time:",round(Time.t[time]*1000,5),"ms & Iteration:",k,"-> [",np.round(eps_h_0,2+int(np.abs(np.log10(Tolh0)))),"]\n")
+        print("Load Balance:: Residuals [h0] @Time:",round(Time.t[time]*1000,5),"ms & Iteration:",i,"-> [",np.round(eps_h_0,2+int(np.abs(np.log10(Tolh0)))),"]\n")
         if VisualFeedbackLevel>1:
            fig=vis.Report_PT(Grid,StateVector[time])                       
            if SaveFig2File:

@@ -73,7 +73,9 @@ class ReynoldsSolver:
         SetNeumannRight=self.Discretization.SetNeumannRight
         
         #define your own when desired
-        
+        Identity=sparse.identity(self.Grid.Nx, dtype='float', format="csr")
+        Phi=sparse.identity(self.Grid.Nx, dtype='float', format="csr")
+        DPhiDX=sparse.identity(self.Grid.Nx, dtype='float', format="csr")
         #3. Iterate
 
         k=0
@@ -101,14 +103,24 @@ class ReynoldsSolver:
             phi = Densh3/ViscosityFunc/12
 
             " phi as sparse matrix "
-            Phi = sparse.diags(phi)
-            A = Phi*D2DX2
+            #Phi = sparse.diags(phi)
+            #A = Phi*D2DX2
+
+            Phi.data=phi
+            A = Phi.data @ D2DX2
+            
+            
+
+
 
             " find B "
             " use central diff to find derivatives of phi in each node "
-            d_phi = DDX*phi
-            D_Phi = sparse.diags(d_phi)
-            B = D_Phi*DDX
+            #d_phi = DDX*phi
+            #D_Phi = sparse.diags(d_phi)
+            dphidx=DDX @ phi
+            DPhiDX.data=dphidx
+            #B = D_Phi*DDX
+            B=DPhiDX @ DDX
 
             " find M "
             M = A+B
@@ -119,9 +131,9 @@ class ReynoldsSolver:
 
             PrevState = StateVector[time-1]
             dt = self.Time.dt
-            h_Density_Diff = (CurState.h*DensityFunc - PrevState.h*PreviousDensity)/dt
+            h_Density_Diff = (h_Density  - PrevState.h*PreviousDensity)/dt
 
-            RHS = (U/2)*DDX*h_Density + h_Density_Diff
+            RHS = (U/2)*DDX @  h_Density + h_Density_Diff
 
             #3. Set Boundary Conditions Pressure
             " Dirichlet on M as coded in FiniteDifferences "
@@ -130,15 +142,15 @@ class ReynoldsSolver:
             SetDirichletRight(M)
 
             " Boundary conditions on RHS "
-            RHS[0] = p_carter-self.Ops.AtmosphericPressure
-            RHS[self.Grid.Nx-1] = self.Ops.CylinderPressure[time]-self.Ops.AtmosphericPressure
+            RHS[0] = self.Ops.AtmosphericPressure
+            RHS[-1] = self.Ops.CylinderPressure[time]
 
             #4. Solve System for Pressure + Update
             P_sol = spsolve(M,RHS)
-            P_old = PrevState.Pressure
+            P_old = CurState.Pressure
             delta_P = np.maximum(P_sol,0)-P_old
-            P_new = P_old + self.UnderRelaxP*delta_P
-            
+            StateVector[time].Pressure = P_old + self.UnderRelaxP*delta_P
+            """
 
             "Create LHS = I+E+D"
             #5. LHS Temperature
@@ -193,16 +205,17 @@ class ReynoldsSolver:
             T_sol = spsolve(M2,RHS_T)
             delta_T = T_sol-T_old
             T_new = T_old + self.UnderRelaxT*delta_T
+            """
             
             k += 1
             " update statevector? "
             #9. Calculate other quantities
             StateVector[time].Pressure = P_new
-            StateVector[time].Temperature = T_new
+            #StateVector[time].Temperature = T_new
             
             #10. Residuals & Report
             epsP[k] = np.linalg.norm(delta_P/P_new)/self.Grid.Nx
-            epsT[k] = np.linalg.norm(delta_T/T_new)/self.Grid.Nx
+            epsT[k] = 0#np.linalg.norm(delta_T/T_new)/self.Grid.Nx
            
             #11. Provide a plot of the solution
             # 10. Provide a plot of the solution
