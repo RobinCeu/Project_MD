@@ -91,7 +91,7 @@ class TriboContact:
             hertzian.append(StateVector[k].HertzianContactPressure)
             k += 1
         
-        # sliding velocity doesnt start from zero
+        # sliding distance doesnt start from zero
         hertzian = self.WearCoefficient_CompressionRing*np.array(hertzian)/Solids('Nitrided Stainless Steel').Hardness
         s = Ops.SlidingDistance[:time]
         s = np.concatenate(([0],s))
