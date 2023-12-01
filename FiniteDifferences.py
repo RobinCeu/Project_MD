@@ -37,8 +37,8 @@ class FiniteDifferences:
         self.Identity=sparse.identity(Grid.Nx, dtype='float', format="csr")
         
         self.DDXCentral=sparse.diags(self.CentralStencilD, [-1, 1, 0], shape=(Grid.Nx, Grid.Nx), dtype='float', format="csr")
-        self.DDXCentral[0,0] = 1.0/Grid.dx #Define right boundary stencil
-        self.DDXCentral[0,1] = -1.0/Grid.dx #Define right boundary stencil
+        self.DDXCentral[0,0] = -1.0/Grid.dx #Define right boundary stencil    # SIGN DIFFERENCE WITH RESPECT TO EXAMPLE IN ASSIGNMENT
+        self.DDXCentral[0,1] = 1.0/Grid.dx #Define right boundary stencil     # SIGN DIFFERENCE WITH RESPECT TO EXAMPLE IN ASSIGNMENT
         self.DDXCentral[Grid.Nx-1,Grid.Nx-2] = -1.0/Grid.dx #Define left boundary stencil
         self.DDXCentral[Grid.Nx-1,Grid.Nx-1] = 1.0/Grid.dx #Define left boundary stencil
 
@@ -95,3 +95,4 @@ class FiniteDifferences:
     
     def SetNeumannRight(self,M):
         M.data[[-3,-2,-1]]=self.ForwardStencilD
+

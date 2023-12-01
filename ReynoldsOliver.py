@@ -45,7 +45,7 @@ class ReynoldsSolver:
 #################
 ##### TO DO #####
 #################       
-    " statevector a list of states? "
+
     def SolveReynolds(self,StateVector,time): # StateVector is both in and output
         
         #1. reset convergence
@@ -105,14 +105,12 @@ class ReynoldsSolver:
             " phi as sparse matrix "
             #Phi = sparse.diags(phi)
             #A = Phi*D2DX2
-
+            # print("phi", phi)
             Phi.data=phi
-            A = Phi.data @ D2DX2
-            
-            
-
-
-
+            # print("Phi", Phi)
+            A = Phi @ D2DX2
+            # print("A",A)
+             
             " find B "
             " use central diff to find derivatives of phi in each node "
             #d_phi = DDX*phi
@@ -121,6 +119,7 @@ class ReynoldsSolver:
             DPhiDX.data=dphidx
             #B = D_Phi*DDX
             B=DPhiDX @ DDX
+            #print(B)
 
             " find M "
             M = A+B
@@ -129,18 +128,21 @@ class ReynoldsSolver:
             U = self.Ops.SlidingVelocity[time]
             h_Density = CurState.h*DensityFunc
 
-            PrevState = StateVector[time-1]
-            dt = self.Time.dt
-            h_Density_Diff = (h_Density  - PrevState.h*PreviousDensity)/dt
+            # PrevState = StateVector[time-1]
+            # dt = self.Time.dt
+            # h_Density_Diff = (h_Density  - PrevState.h*PreviousDensity)/dt
 
-            RHS = (U/2)*DDX @  h_Density + h_Density_Diff
+            RHS = (U/2)*DDX @  h_Density #+ h_Density_Diff
 
             #3. Set Boundary Conditions Pressure
             " Dirichlet on M as coded in FiniteDifferences "
             " M is new M with left (right) Dirichlet? "
+            #print(M)
+            M = sparse.csr_matrix(M)
+            #print(M)
             SetDirichletLeft(M)
             SetDirichletRight(M)
-
+            #print(M)
             " Boundary conditions on RHS "
             RHS[0] = self.Ops.AtmosphericPressure
             RHS[-1] = self.Ops.CylinderPressure[time]
@@ -204,18 +206,20 @@ class ReynoldsSolver:
             #8. Solve System for Temperature + Update
             T_sol = spsolve(M2,RHS_T)
             delta_T = T_sol-T_old
-            T_new = T_old + self.UnderRelaxT*delta_T
+            StateVector[time].Temperature = T_old + self.UnderRelaxT*delta_T
             """
             
             k += 1
+
+
             " update statevector? "
             #9. Calculate other quantities
-            StateVector[time].Pressure = P_new
-            #StateVector[time].Temperature = T_new
+            
+            
             
             #10. Residuals & Report
-            epsP[k] = np.linalg.norm(delta_P/P_new)/self.Grid.Nx
-            epsT[k] = 0#np.linalg.norm(delta_T/T_new)/self.Grid.Nx
+            epsP[k] = np.linalg.norm(delta_P/StateVector[time].Pressure)/self.Grid.Nx
+            epsT[k] = 0 #np.linalg.norm(delta_T/T_new)/self.Grid.Nx
            
             #11. Provide a plot of the solution
             # 10. Provide a plot of the solution
@@ -241,10 +245,19 @@ class ReynoldsSolver:
             
         #12. Calculate other quantities (e.g. Wall Shear Stress, Hydrodynamic Load, ViscousFriction)
         
-        y_values = StateVector[time-1].Pressure
+        # Hydronamic load
         x_values = self.Grid.x
-        p_x = interp1d(x_values, y_values, kind='linear', fill_value='extrapolate')
-        def integrand(x):
-            return p_x(x)
-        W_hyd, W_hyd_error = quad(integrand, x_values[0], x_values[-1])
-        StateVector[time].HydrodynamicLoad = W_hyd 
+        y_values = StateVector[time].Pressure
+        StateVector[time].HydrodynamicLoad = np.trapz(y_values,x_values)
+
+        # Wall shear stress (Course 9.24)
+        Poisseuille = -(StateVector[time].h/2)*(DDX @ StateVector[time].Pressure)
+        Couette = self.FluidModel.DynamicViscosity(StateVector[time])*self.Ops.SlidingVelocity[time]/StateVector[time].h
+       
+        StateVector[time].WallShearStress = Poisseuille + Couette
+
+        # ViscousFriction
+        x_values = self.Grid.x
+        y_values = StateVector[time].WallShearStress
+        StateVector[time].ViscousFriction = np.trapz(y_values,x_values)
+    

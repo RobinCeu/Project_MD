@@ -68,19 +68,62 @@ Grid=Grid(Contact,Nodes)
 """ Spatial Discretization by Finite Differences """
 Discretization=FiniteDifferences(Grid)
 
-u=np.sin(10000*Grid.x)
-dudx=10000*np.cos(10000*Grid.x)
-d2udx2=-1e8*np.sin(10000*Grid.x)
+u=np.sin(8000*Grid.x)
+dudx=8000*np.cos(8000*Grid.x)         # GOOD CONVERGENCE FOR 256 NODES
+d2udx2=-8000**2*np.sin(8000*Grid.x)
+
+# u = Grid.x**3
+# dudx = 3*Grid.x**2                    # GOOD CONVERGENCE FOR 256 NODES
+# d2udx2 = 6*Grid.x
+
+# u = (Grid.x)**2
+# dudx = 2*Grid.x                         #  GOOD CONVERGENCE ONLY FOR SMALL NUMBER OF NODES (10) --> INCREASE NUMERCIAL INSTABILITY
+# d2udx2 = 0*Grid.x + 2
+
+# u = np.exp(8000*Grid.x)
+# dudx = 8000*np.exp(8000*Grid.x)       # GOOD CONVERGENCE FOR 256 NODES
+# d2udx2 = 8000**2*np.exp(8000*Grid.x)
 
 DUDX=Discretization.DDXCentral @ u
 D2UDX2=Discretization.D2DX2Central @ u
 
+DUDX_Forward = Discretization.DDXForward @ u
+D2UDX2_Forward = Discretization.D2DX2Forward @ u
+
+DUDX_Backward = Discretization.DDXBackward @ u
+D2UDX2_Backward = Discretization.D2DX2Backward @ u
 
 plt.figure()
 plt.plot(Grid.x,dudx,Grid.x,DUDX)
+plt.title("Central")
 plt.show()
 
 
 plt.figure()
 plt.plot(Grid.x,d2udx2,Grid.x,D2UDX2)
+plt.title("Central second order")
+plt.show()
+
+
+plt.figure()
+plt.plot(Grid.x,dudx,Grid.x,DUDX_Forward)
+plt.title("Forward")
+plt.show()
+
+
+plt.figure()
+plt.plot(Grid.x,d2udx2,Grid.x,D2UDX2_Forward)
+plt.title("Forward second order")
+plt.show()
+
+
+plt.figure()
+plt.plot(Grid.x,dudx,Grid.x,DUDX_Backward)
+plt.title("Backward")
+plt.show()
+
+
+plt.figure()
+plt.plot(Grid.x,d2udx2,Grid.x,D2UDX2_Backward)
+plt.title("Backward second order")
 plt.show()

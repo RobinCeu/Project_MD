@@ -243,7 +243,7 @@ while time<Time.nt:
     """ Calculate Ohter Variables of Interest, e.g. COF wear"""
     #TODO
     StateVector[time].Hersey= Mixture.DynamicViscosity(StateVector[time])*np.abs(Ops.PistonVelocity[time])/np.abs(Ops.CompressionRingLoad[time])
-    StateVector[time].COF= 0.001
+    StateVector[time].COF= StateVector[time].ViscousFriction/StateVector[time].HydrodynamicLoad
     Contact.Wear(Ops,Time,StateVector,time)
  
     
