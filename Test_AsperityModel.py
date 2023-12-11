@@ -1,7 +1,3 @@
-
-"""
-Import libraries
-"""
 import socket
 import sys
 
@@ -64,66 +60,52 @@ Contact=TriboContact(Engine)
 Nodes=256
 Grid=Grid(Contact,Nodes)
 
+"""Temporal Discretization"""
+TimeStep=1e-5 # Choose Temperal Resolution 
+EndTime=4.0*np.pi/(EngineRPM*(2.0*np.pi/60.0))
+Time=Time(EndTime,TimeStep)
+
+"""Define Operational Conditions""" 
+Ops=Ops(Time,Engine,EngineRPM,EngineAcceleration,OilTemperature)
+
+
+"""Define Two-Phase Lubricant-Vapour flow"""
+Oil=Liquid('SAE5W40')
+Vapour=Gas('SAE5W40')
+Mixture=CavitationModel(Oil,Vapour)
+
+
+"""Define the State Vector = List of All States over time"""
+StateVector=[]
+for t in range(Time.nt):
+    StateVector.append(State(Grid))
+
 
 """ Spatial Discretization by Finite Differences """
 Discretization=FiniteDifferences(Grid)
 
-# u=np.sin(8000*Grid.x)
-# dudx=8000*np.cos(8000*Grid.x)         # GOOD CONVERGENCE FOR 256 NODES
-# d2udx2=-8000**2*np.sin(8000*Grid.x)
 
-# u = Grid.x**3
-# dudx = 3*Grid.x**2                    # GOOD CONVERGENCE FOR 256 NODES
-# d2udx2 = 6*Grid.x
-
-u = (Grid.x)**2
-dudx = 2*Grid.x                 #  GOOD CONVERGENCE ONLY FOR SMALL NUMBER OF NODES (10) --> INCREASE NUMERCIAL INSTABILITY
-d2udx2 = 0*Grid.x + 2
-
-# u = np.exp(8000*Grid.x)
-# dudx = 8000*np.exp(8000*Grid.x)       # GOOD CONVERGENCE FOR 256 NODES
-# d2udx2 = 8000**2*np.exp(8000*Grid.x)
-
-DUDX=Discretization.DDXCentral @ u
-D2UDX2=Discretization.D2DX2Central @ u
-
-DUDX_Forward = Discretization.DDXForward @ u
-D2UDX2_Forward = Discretization.D2DX2Forward @ u
-
-DUDX_Backward = Discretization.DDXBackward @ u
-D2UDX2_Backward = Discretization.D2DX2Backward @ u
-
-plt.figure()
-plt.plot(Grid.x,dudx,Grid.x,DUDX)
-plt.title("Central")
-plt.show()
+""" Initialize Reynolds Solver"""
+MaxIterReynolds=5000
+TolP=1e-4
+UnderRelaxP=0.001
+TolT=1e-4
+UnderRelaxT=0.01
+Reynolds=ReynoldsSolver(Grid,Time,Ops,Mixture,Discretization)
+Reynolds.SetSolver(MaxIterReynolds,TolP,UnderRelaxP,TolT,UnderRelaxT,VisualFeedbackLevel)
 
 
-plt.figure()
-plt.plot(Grid.x,d2udx2,Grid.x,D2UDX2)
-plt.title("Central second order")
-plt.show()
+# Test the asperity model by setting different values for h0, for the same time, the higher the h0, the lower the A_asperities, W_asperities and F_asperities
+time = 100
+h0 = [1e-6,10e-6,0,0.01]
+for i in h0:
+    StateVector[time].h0 = i
+    StateVector[time].Lambda = StateVector[time].h0/Contact.Roughness
+    Contact.AsperityContact(StateVector,time)
 
-
-plt.figure()
-plt.plot(Grid.x,dudx,Grid.x,DUDX_Forward)
-plt.title("Forward")
-plt.show()
-
-
-plt.figure()
-plt.plot(Grid.x,d2udx2,Grid.x,D2UDX2_Forward)
-plt.title("Forward second order")
-plt.show()
-
-
-plt.figure()
-plt.plot(Grid.x,dudx,Grid.x,DUDX_Backward)
-plt.title("Backward")
-plt.show()
-
-
-plt.figure()
-plt.plot(Grid.x,d2udx2,Grid.x,D2UDX2_Backward)
-plt.title("Backward second order")
-plt.show()
+    print("for h0 =", i*1e6, "micron :")
+    print("Ring height =", Engine.CompressionRing.Thickness*1000, "mm")
+    print("asperity contact area = ", StateVector[time].AsperityArea*1e6,"mm²")
+    print("asperity load = ", StateVector[time].AsperityArea,'N')
+    print("asperity friction = ", StateVector[time].AsperityArea, 'N/m²')
+    print("")

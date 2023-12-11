@@ -62,7 +62,7 @@ Nodes=256
 Grid=Grid(Contact,Nodes)
 
 """Temporal Discretization"""
-TimeStep=1e-5 # Choose Temperal Resolution 
+TimeStep=0.01#1e-5 # Choose Temperal Resolution 
 EndTime=4.0*np.pi/(EngineRPM*(2.0*np.pi/60.0))
 Time=Time(EndTime,TimeStep)
 
@@ -96,8 +96,8 @@ Reynolds=ReynoldsSolver(Grid,Time,Ops,Mixture,Discretization)
 Reynolds.SetSolver(MaxIterReynolds,TolP,UnderRelaxP,TolT,UnderRelaxT,VisualFeedbackLevel)
 
 # de-activate squeeze term and temperature code in ReynoldsOliver
-h0 = 10e-6
-time = 10
+h0 = 6.247321109639228e-06
+time = 1
 StateVector[time].h= h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
 Reynolds.SolveReynolds(StateVector,time)
 fig, ax1 = plt.subplots()
@@ -119,6 +119,8 @@ plt.title(text_to_display, fontsize=10, color='red')
 
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
+
+print(StateVector[time].HydrodynamicLoad)
 
 
 

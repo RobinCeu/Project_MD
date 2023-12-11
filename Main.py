@@ -70,7 +70,7 @@ Contact=TriboContact(Engine)
 
 
 """1D Computational Grid"""
-Nodes=10
+Nodes=256
 Grid=Grid(Contact,Nodes)
 
 """Temporal Discretization"""
@@ -167,58 +167,64 @@ else:
 
 
 """Start Time Loop"""
+"""Start Time Loop"""
 start_time = TimeKeeper.time()
 while time<Time.nt:
-    print(Ops.PistonAcceleration)
+    time += 1
+
+    if time == Time.nt:
+        break
+
+    " use previous state for the initial guesses "
+    StateVector[time] = StateVector[time-1]
     
-    """Initialize State"""
-    time+=1
-    StateVector[time]=copy.deepcopy(StateVector[time-1])
-    print("Time Loop:: Start Calculation @ Time:",round(Time.t[time]*1000,5),"ms \n")
-    
-    
-    """Start Load Balance Loop"""
-    #TODO
     eps_h_0 = np.ones(MaxIterLoad+1)
-    W= np.zeros(MaxIterLoad+1)
-    h_0=
-    DW=
-
     i = 1
-    
-    h_0 = StateVector[time-1].h0
-    print('aaaaaaaaa: ',StateVector[time].h0)
-    # see Secant method (two initial guesses)
-    h_0_l = [h_0+1, h_0]
-    D_W_l = [0]
-    press = StateVector[time-1].Pressure
-    temp = StateVector[time-1].Temperature
 
-    while (eps_h_0 > Tolh0 and i <MaxIterLoad): 
+    h0 = np.zeros(MaxIterLoad+1)
+    h0[0] = StateVector[time-1].h0
+    h0[1] = 0.99*h0[0]
+
+    F_el = 16*Engine.CompressionRing.FreeGapSize*Solids('Nitrided Stainless Steel').YoungsModulus*(Engine.CompressionRing.Thickness*Engine.CompressionRing.Width**3/12)/(3*np.pi*(Engine.Cylinder.Radius*2)**4)
+    F_comp = Engine.CompressionRing.Thickness*(Ops.CylinderPressure[time]-Ops.AtmosphericPressure)
+
+    DW = np.zeros(MaxIterLoad+1)
+    StateVector[time].h= h0[0] + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
+    Reynolds.SolveReynolds(StateVector,time)
+    StateVector[time].Lambda =  h0[0]/Contact.Roughness
+    Contact.AsperityContact(StateVector,time)
+    DW[0] = StateVector[time].HydrodynamicLoad  - F_el - F_comp + StateVector[time].AsperityLoad
+
+    StateVector[time].h= h0[1] + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
+    Reynolds.SolveReynolds(StateVector,time)
+    StateVector[time].Lambda =  h0[1]/Contact.Roughness
+    Contact.AsperityContact(StateVector,time)
+    DW[1] = StateVector[time].HydrodynamicLoad  - F_el - F_comp + StateVector[time].AsperityLoad
     
+
+    # implement load balance: Quasi-Newton method
+
+    while (eps_h_0[i] > Tolh0 and i < MaxIterLoad):
+
         """a. Calculate Film Thickness Profile"""
-        StateVector[time].h= StateVector[time-1].h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
+        StateVector[time].h= StateVector[time].h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
 
         """b. Calculate Asperity Load"""
-        StateVector[time].Lambda =  h_0/Contact.Roughness
+        StateVector[time].Lambda =  h0[i]/Contact.Roughness
         Contact.AsperityContact(StateVector,time)
-        
+
         """c. Solve Reynolds""" 
         Reynolds.SolveReynolds(StateVector,time)
-        
-        """d. Newton Raphson Iteration to find the h0"""
-        F_el = 16*Engine.CompressionRing.FreeGapSize*Solids('Nitrided Stainless Steel').YoungsModulus*(Engine.CompressionRing.Thickness*Engine.CompressionRing.Width**3/12)/(3*np.pi*(Engine.Cylinder.Radius*2)**4)
-        F_comp = Engine.CompressionRing.Thickness*(Ops.CylinderPressure[time]-Ops.AtmosphericPressure)
-        
-        D_W_l.append(StateVector[time].HydrodynamicLoad + StateVector[time].AsperityLoad - F_el - F_comp)
-        
-        # Secant method assumes two initial guesses (arbitrary??)
 
-        h_0_l.append(max(h_0_l[-1]- UnderRelaxh0*(D_W_l[-1]/(D_W_l[-1]-D_W_l[-2]))*(h_0_l[-1]-h_0_l[-2]) , 0.1*np.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2)))
-        """e. Update & Calculate Residual"""      
-        
-        i += 1
-        eps_h_0 = abs(h_0_l[-1]/h_0_l[-2]-1)
+        """d. update h0 with Quasi Newton method"""
+        DW[i+1] = StateVector[time].HydrodynamicLoad  - F_el - F_comp + StateVector[time].AsperityLoad
+        h0[i+1] = max(h0[i]- UnderRelaxh0*(DW[i]/(DW[i]-DW[i-1]))*(h0[i]-h0[i-1]) , 0.1*np.sqrt(Engine.Cylinder.Roughness**2+Engine.CompressionRing.Roughness**2))
+        StateVector[time].h0 = h0[i+1]
+
+        """update iteration parameters"""
+        i += 1 
+        eps_h_0[i] = np.abs(h0[i]/h0[i-1]-1)
+
         """Load Balance Output""" 
         print("Load Balance:: Residuals [h0] @Time:",round(Time.t[time]*1000,5),"ms & Iteration:",i,"-> [",np.round(eps_h_0,2+int(np.abs(np.log10(Tolh0)))),"]\n")
         if VisualFeedbackLevel>1:
@@ -227,6 +233,12 @@ while time<Time.nt:
                figname="Figures/PT@Time_"+str(round(Time.t[time]*1000,5))+"ms_LoadIteration_"+str(i)+".png" 
                fig.savefig(figname, dpi=300)  
            plt.close(fig)         
+    
+    
+    StateVector[time].Lambda =  h0[i]/Contact.Roughness
+    Contact.AsperityContact(StateVector,time)
+    StateVector[time].h= StateVector[time].h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
+    Reynolds.SolveReynolds(StateVector,time)
     
     
     """Visual Output per time step""" 
@@ -244,7 +256,7 @@ while time<Time.nt:
     #TODO
     StateVector[time].Hersey= Mixture.DynamicViscosity(StateVector[time])*np.abs(Ops.PistonVelocity[time])/np.abs(Ops.CompressionRingLoad[time])
     StateVector[time].COF= StateVector[time].ViscousFriction/StateVector[time].HydrodynamicLoad
-    Contact.Wear(Ops,Time,StateVector,time)
+    #Contact.Wear(Ops,Time,StateVector,time)
  
     
   

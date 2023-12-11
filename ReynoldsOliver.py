@@ -128,11 +128,12 @@ class ReynoldsSolver:
             U = self.Ops.SlidingVelocity[time]
             h_Density = CurState.h*DensityFunc
 
-            # PrevState = StateVector[time-1]
-            # dt = self.Time.dt
-            # h_Density_Diff = (h_Density  - PrevState.h*PreviousDensity)/dt
+            " squeeze term "
+            PrevState = StateVector[time-1]
+            dt = self.Time.dt
+            h_Density_Diff = (h_Density  - PrevState.h*PreviousDensity)/dt
 
-            RHS = (U/2)*DDX @  h_Density #+ h_Density_Diff
+            RHS = (U/2)*DDX @  h_Density + h_Density_Diff
 
             #3. Set Boundary Conditions Pressure
             " Dirichlet on M as coded in FiniteDifferences "
@@ -152,7 +153,7 @@ class ReynoldsSolver:
             P_old = CurState.Pressure
             delta_P = np.maximum(P_sol,0)-P_old
             StateVector[time].Pressure = P_old + self.UnderRelaxP*delta_P
-            """
+            
 
             "Create LHS = I+E+D"
             #5. LHS Temperature
@@ -207,7 +208,7 @@ class ReynoldsSolver:
             T_sol = spsolve(M2,RHS_T)
             delta_T = T_sol-T_old
             StateVector[time].Temperature = T_old + self.UnderRelaxT*delta_T
-            """
+            
             
             k += 1
 
@@ -219,7 +220,7 @@ class ReynoldsSolver:
             
             #10. Residuals & Report
             epsP[k] = np.linalg.norm(delta_P/StateVector[time].Pressure)/self.Grid.Nx
-            epsT[k] = 0 #np.linalg.norm(delta_T/T_new)/self.Grid.Nx
+            epsT[k] = np.linalg.norm(delta_T/T_new)/self.Grid.Nx
            
             #11. Provide a plot of the solution
             # 10. Provide a plot of the solution

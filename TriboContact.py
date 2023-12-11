@@ -14,6 +14,7 @@ from SolidsLibrary import Solids
 
 from scipy.interpolate import interp1d
 from scipy.integrate import quad
+from scipy.integrate import simps
 
 class TriboContact:
     
@@ -68,8 +69,8 @@ class TriboContact:
     def AsperityContact(self,StateVector,time):
         Lambda=StateVector[time].Lambda
         l_0 = min(StateVector[time].h0/self.Roughness,self.l_c)
-        StateVector[time].AsperityArea= np.pi**2*(self.RoughnessParameter)**2*np.pi*2*self.Engine.Cylinder.Radius*np.sqrt((self.Engine.CompressionRing.Thickness**2*self.Roughness)/(4*self.Engine.CompressionRing.CrownHeight))*quad(self.area_integrand, l_0, self.l_c)[0]
-        StateVector[time].AsperityLoad= 16/15*np.sqrt(2)*np.pi*(self.RoughnessParameter)**2*np.sqrt(self.Roughness/self.Kappa)*self.YoungsModulus*np.sqrt(self.Roughness*self.Engine.CompressionRing.Thickness**2/(4*self.Engine.CompressionRing.CrownHeight))*quad(self.load_integrand,l_0,self.l_c)[0]
+        StateVector[time].AsperityArea= np.pi**2*(self.RoughnessParameter)**2*np.pi*2*self.Engine.Cylinder.Radius*np.sqrt((self.Engine.CompressionRing.Thickness**2*self.Roughness)/(4*self.Engine.CompressionRing.CrownHeight))*quad(self.area_integrand, l_0, self.l_c, limit=50)[0]
+        StateVector[time].AsperityLoad= 16/15*np.sqrt(2)*np.pi*(self.RoughnessParameter)**2*np.sqrt(self.Roughness/self.Kappa)*self.YoungsModulus*np.sqrt(self.Roughness*self.Engine.CompressionRing.Thickness**2/(4*self.Engine.CompressionRing.CrownHeight))*quad(self.load_integrand,l_0,self.l_c,limit=50)[0]
         StateVector[time].AsperityFriction=self.Tau0*StateVector[time].AsperityArea/(np.pi*self.Engine.Cylinder.Radius*2)+self.f_b*StateVector[time].AsperityLoad
         StateVector[time].AsperityContactPressure= StateVector[time].AsperityLoad/StateVector[time].AsperityArea
         StateVector[time].HertzianContactPressure=np.pi/4*np.sqrt(StateVector[time].AsperityLoad*self.YoungsModulus/(np.pi*self.Engine.CompressionRing.CrownHeight))

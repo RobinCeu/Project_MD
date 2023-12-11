@@ -198,18 +198,21 @@ import matplotlib.pyplot as plt
 
 
 # Plot text on figure
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-# Create a simple plot
-x = [1, 2, 3, 4]
-y = [2, 4, 6, 8]
-plt.plot(x, y, label='Data')
+# # Create a simple plot
+# x = [1, 2, 3, 4]
+# y = [2, 4, 6, 8]
+# plt.plot(x, y, label='Data')
 
-# Add text to the graph with the value of a variable
-variable_value = 6.5
-text_to_display = f'Variable Value: {variable_value}'
-x = 2
-y = 4
-plt.text(x,y,text_to_display, fontsize=12, color='red')
-# Show the plot
-plt.show()
+# # Add text to the graph with the value of a variable
+# variable_value = 6.5
+# text_to_display = f'Variable Value: {variable_value}'
+# x = 2
+# y = 4
+# plt.text(x,y,text_to_display, fontsize=12, color='red')
+# # Show the plot
+# plt.show()
+
+
+print(np.arange(0.0,0.05,0.01))
