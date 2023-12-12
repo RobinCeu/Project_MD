@@ -62,8 +62,8 @@ Nodes=256
 Grid=Grid(Contact,Nodes)
 
 """Temporal Discretization"""
-TimeStep=0.01#1e-5 # Choose Temperal Resolution 
-EndTime=4.0*np.pi/(EngineRPM*(2.0*np.pi/60.0))
+TimeStep=0.01 #1e-5 # Choose Temperal Resolution 
+EndTime=4.0*np.pi/(EngineRPM*(2.0*np.pi/60.0)) #0.05s for 2400 rpm
 Time=Time(EndTime,TimeStep)
 
 """Define Operational Conditions""" 
@@ -95,8 +95,22 @@ UnderRelaxT=0.01
 Reynolds=ReynoldsSolver(Grid,Time,Ops,Mixture,Discretization)
 Reynolds.SetSolver(MaxIterReynolds,TolP,UnderRelaxP,TolT,UnderRelaxT,VisualFeedbackLevel)
 
+
+
+
+
+
 # de-activate squeeze term and temperature code in ReynoldsOliver
-h0 = 6.247321109639228e-06
+# Test-file used to check whether the ReynoldsSolver gives, for a predetermined value of h0, a pressure distribution. Choose some timesteps starting from 1 as initially only state 
+# @ time=0 was defined 
+# Also: set timesteps larger in order to not just get the same result (the focus here is not jet on how close the results look to reality)
+
+
+
+
+
+
+h0 = 1e-5
 time = 1
 StateVector[time].h= h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
 Reynolds.SolveReynolds(StateVector,time)
@@ -120,11 +134,28 @@ plt.title(text_to_display, fontsize=10, color='red')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
 
-print(StateVector[time].HydrodynamicLoad)
+time = 2
+StateVector[time].h= h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
+Reynolds.SolveReynolds(StateVector,time)
+fig, ax1 = plt.subplots()
+color = 'tab:red'
+ax1.set_xlabel('position')
+ax1.set_ylabel('height h', color=color)
+ax1.plot(Grid.x, StateVector[time].h, color=color)
+ax1.tick_params(axis='y', labelcolor=color)
 
+ax2 = ax1.twinx()
+color = 'tab:blue'
+ax2.set_ylabel('pressure', color=color)
+ax2.plot(Grid.x, StateVector[time].Pressure, color=color)
+ax2.tick_params(axis='y', labelcolor=color)
 
+variable_value = np.round(Ops.SlidingVelocity[time],2)
+text_to_display = f'Sliding Velocity: {variable_value} m/s at {time}'
+plt.title(text_to_display, fontsize=10, color='red')
 
-
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
 
 # ITERATE OVER PLOTS
 

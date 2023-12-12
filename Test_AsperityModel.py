@@ -95,7 +95,7 @@ Reynolds=ReynoldsSolver(Grid,Time,Ops,Mixture,Discretization)
 Reynolds.SetSolver(MaxIterReynolds,TolP,UnderRelaxP,TolT,UnderRelaxT,VisualFeedbackLevel)
 
 
-# Test the asperity model by setting different values for h0, for the same time, the higher the h0, the lower the A_asperities, W_asperities and F_asperities
+# Idea: Test the asperity model by setting different values for h0, for the same time, the higher the h0, the lower the A_asperities, W_asperities and F_asperities
 time = 100
 h0 = [1e-6,10e-6,0,0.01]
 for i in h0:
@@ -105,7 +105,7 @@ for i in h0:
 
     print("for h0 =", i*1e6, "micron :")
     print("Ring height =", Engine.CompressionRing.Thickness*1000, "mm")
-    print("asperity contact area = ", StateVector[time].AsperityArea*1e6,"mm²")
-    print("asperity load = ", StateVector[time].AsperityArea,'N')
-    print("asperity friction = ", StateVector[time].AsperityArea, 'N/m²')
+    print("Asperity contact area = ", StateVector[time].AsperityArea*1e6,"mm²")
+    print("Asperity load = ", StateVector[time].AsperityArea,'N')
+    print("Asperity friction = ", StateVector[time].AsperityArea, 'N/m²')
     print("")

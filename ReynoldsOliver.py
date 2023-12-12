@@ -155,59 +155,59 @@ class ReynoldsSolver:
             StateVector[time].Pressure = P_old + self.UnderRelaxP*delta_P
             
 
-            "Create LHS = I+E+D"
-            #5. LHS Temperature
-            " set I "
-            I = self.Discretization.Identity
-            " set D "
-            " use central diff to find derivatives of pressure in each node "
-            d_pressure = DDX*P_new
+            # "Create LHS = I+E+D"
+            # #5. LHS Temperature
+            # " set I "
+            # I = self.Discretization.Identity
+            # " set D "
+            # " use central diff to find derivatives of pressure in each node "
+            # d_pressure = DDX*P_new
 
-            " substitute this in the average velocity equation (22) "
-            u = -(CurState.h**2)*d_pressure/phi/12+U/2
-            u_plus = np.maximum(u,0)
-            u_min = np.minimum(u,0)
-            D1 = sparse.diags(u_plus*dt)*DDXBackward
-            D2 = sparse.diags(u_min*dt)*DDXForward
-            D = D1 + D2
+            # " substitute this in the average velocity equation (22) "
+            # u = -(CurState.h**2)*d_pressure/phi/12+U/2
+            # u_plus = np.maximum(u,0)
+            # u_min = np.minimum(u,0)
+            # D1 = sparse.diags(u_plus*dt)*DDXBackward
+            # D2 = sparse.diags(u_min*dt)*DDXForward
+            # D = D1 + D2
 
-            " set E "
-            e = ConducFunc*dt/DensityFunc/SpecHeatFunc
-            E = -sparse.diags(e)*D2DX2
+            # " set E "
+            # e = ConducFunc*dt/DensityFunc/SpecHeatFunc
+            # E = -sparse.diags(e)*D2DX2
 
-            M2 = I+D+E
+            # M2 = I+D+E
 
-            #6. RHS Temperature
-            T_old = PrevState.Temperature
-            # " use double central differentiation to find second order derivatives of pressure in each node "
-            # dd_pressure = D2DX2*P_new
+            # #6. RHS Temperature
+            # T_old = PrevState.Temperature
+            # # " use double central differentiation to find second order derivatives of pressure in each node "
+            # # dd_pressure = D2DX2*P_new
 
-            " substitute this in the shear heating equation (23) "
-            Q = (CurState.h**2)*d_pressure**2/phi/12 + (phi*U**2)/CurState.h**2
+            # " substitute this in the shear heating equation (23) "
+            # Q = (CurState.h**2)*d_pressure**2/phi/12 + (phi*U**2)/CurState.h**2
 
-            RHS_T = T_old + Q*dt/DensityFunc/SpecHeatFunc
+            # RHS_T = T_old + Q*dt/DensityFunc/SpecHeatFunc
 
-            #7. Set Boundary Conditions Temperature
-            if U <= 0:
-                " left Neumann, right Dirichlet "
-                SetDirichletRight(M2)
-                SetNeumannLeft(M2)
-                " boundary conditions on RHS "
-                RHS_T[0] = 0.0
-                RHS_T[-1] = self.Ops.OilTemperature
+            # #7. Set Boundary Conditions Temperature
+            # if U <= 0:
+            #     " left Neumann, right Dirichlet "
+            #     SetDirichletRight(M2)
+            #     SetNeumannLeft(M2)
+            #     " boundary conditions on RHS "
+            #     RHS_T[0] = 0.0
+            #     RHS_T[-1] = self.Ops.OilTemperature
 
-            if U > 0:
-                " right Neumann, left Dirichlet "
-                SetDirichletLeft(M2)
-                SetNeumannRight(M2)
-                " boundary conditions on RHS "
-                RHS_T[0] = self.Ops.OilTemperature
-                RHS_T[-1] = 0.0
+            # if U > 0:
+            #     " right Neumann, left Dirichlet "
+            #     SetDirichletLeft(M2)
+            #     SetNeumannRight(M2)
+            #     " boundary conditions on RHS "
+            #     RHS_T[0] = self.Ops.OilTemperature
+            #     RHS_T[-1] = 0.0
 
-            #8. Solve System for Temperature + Update
-            T_sol = spsolve(M2,RHS_T)
-            delta_T = T_sol-T_old
-            StateVector[time].Temperature = T_old + self.UnderRelaxT*delta_T
+            # #8. Solve System for Temperature + Update
+            # T_sol = spsolve(M2,RHS_T)
+            # delta_T = T_sol-T_old
+            # StateVector[time].Temperature = T_old + self.UnderRelaxT*delta_T
             
             
             k += 1
@@ -220,7 +220,7 @@ class ReynoldsSolver:
             
             #10. Residuals & Report
             epsP[k] = np.linalg.norm(delta_P/StateVector[time].Pressure)/self.Grid.Nx
-            epsT[k] = np.linalg.norm(delta_T/T_new)/self.Grid.Nx
+            # epsT[k] = np.linalg.norm(delta_T/T_new)/self.Grid.Nx
            
             #11. Provide a plot of the solution
             # 10. Provide a plot of the solution

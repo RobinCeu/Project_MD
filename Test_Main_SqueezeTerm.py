@@ -99,8 +99,8 @@ MaxIterLoad=15
 Tolh0=1e-3
 UnderRelaxh0=0.25
 
-# Now you have to re-activate the squeeze term in the ReynoldsOliver.py file
-# other than this, nothing changes
+# For this Test-file you have to re-activate the squeeze term in the ReynoldsOliver.py file
+# other than this, nothing changes (same code as the Test_Main_LoadBalance file)
 
 """Start from Initial guess or Load Initial State"""
 
@@ -166,36 +166,49 @@ while time<Time.nt:
     " use previous state for the initial guesses "
     StateVector[time] = StateVector[time-1]
     
+    " initialize residual h0 and iterations "
     eps_h_0 = np.ones(MaxIterLoad+1)
     i = 1
 
+    " initialize/guess h0 by using the last h0 from the previous timestep and 0.99*h0  "
     h0 = np.zeros(MaxIterLoad+1)
     h0[0] = StateVector[time-1].h0
     h0[1] = 0.99*h0[0]
 
+    " elastic tension and compression on ring "
     F_el = 16*Engine.CompressionRing.FreeGapSize*Solids('Nitrided Stainless Steel').YoungsModulus*(Engine.CompressionRing.Thickness*Engine.CompressionRing.Width**3/12)/(3*np.pi*(Engine.Cylinder.Radius*2)**4)
     F_comp = Engine.CompressionRing.Thickness*(Ops.CylinderPressure[time]-Ops.AtmosphericPressure)
 
+    " initialize load imbalance "
     DW = np.zeros(MaxIterLoad+1)
+
+    " calculate pressure and h for initial guess (last timestep) "
     StateVector[time].h= h0[0] + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
     Reynolds.SolveReynolds(StateVector,time)
+    " calculate asperity model for initial guess (last timestep) "
     # StateVector[time].Lambda =  h0[0]/Contact.Roughness
     # Contact.AsperityContact(StateVector,time)
+    " calculate load imbalance for initial guess (last timestep) "
     DW[0] = StateVector[time].HydrodynamicLoad  - F_el - F_comp #+ StateVector[time].AsperityLoad
 
+    " calculate pressure and h for second guess (0.99*last timestep) "
     StateVector[time].h= h0[1] + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
     Reynolds.SolveReynolds(StateVector,time)
+    " calculate asperity model for second guess (0.99*last timestep) "
     # StateVector[time].Lambda =  h0[1]/Contact.Roughness
     # Contact.AsperityContact(StateVector,time)
+    " calculate load imbalance for initial guess (last timestep) "
     DW[1] = StateVector[time].HydrodynamicLoad  - F_el - F_comp #+ StateVector[time].AsperityLoad
-    
 
-    # implement load balance: Quasi-Newton method
+
+    # Load balance iterations : Quasi-Newton method
+
 
     while (eps_h_0[i] > Tolh0 and i < MaxIterLoad):
 
         """a. Calculate Film Thickness Profile"""
         StateVector[time].h= StateVector[time].h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
+        StateVector[time].h= h0[i] + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
 
         """b. Calculate Asperity Load"""
         # StateVector[time].Lambda =  h0[i]/Contact.Roughness
@@ -213,14 +226,14 @@ while time<Time.nt:
         i += 1 
         eps_h_0[i] = np.abs(h0[i]/h0[i-1]-1)
 
-    print(time)
-    print("h0 = ", StateVector[time].h0)
+
+    " update statevector "
     # StateVector[time].Lambda =  h0[i]/Contact.Roughness
     # Contact.AsperityContact(StateVector,time)
     StateVector[time].h= StateVector[time].h0 + (4.0*Engine.CompressionRing.CrownHeight/Engine.CompressionRing.Thickness**2.0)*Grid.x**2.0
     Reynolds.SolveReynolds(StateVector,time)
 
-
+   
     fig, ax1 = plt.subplots()
     color = 'tab:red'
     ax1.set_xlabel('position')
