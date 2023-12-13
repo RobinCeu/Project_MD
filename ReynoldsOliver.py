@@ -167,7 +167,7 @@ class ReynoldsSolver:
             d_pressure = DDX @ StateVector[time].Pressure
 
             " substitute this in the average velocity equation (22) "
-            u = -(CurState.h**2)*d_pressure/phi/12+U/2 # correct????
+            u = -(CurState.h**2)*d_pressure/ViscosityFunc/12+U/2 # correct????
             u_plus = np.maximum(u,0)
             u_min = np.minimum(u,0)
             D1.data = (u_plus*dt)
@@ -181,11 +181,9 @@ class ReynoldsSolver:
 
             #6. RHS Temperature
             T_old = PrevState.Temperature
-            # " use double central differentiation to find second order derivatives of pressure in each node "
-            # dd_pressure = D2DX2*P_new
-
-            " substitute this in the shear heating equation (23) "
-            Q = (CurState.h**2)*d_pressure**2/phi/12 + (phi*U**2)/CurState.h**2
+         
+            " substitute the shear heating equation (23) "
+            Q = (CurState.h**2)*d_pressure**2/ViscosityFunc/12 + (ViscosityFunc*U**2)/CurState.h**2
 
             RHS_T = T_old + Q*dt/DensityFunc/SpecHeatFunc
 

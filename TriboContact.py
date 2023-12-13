@@ -74,7 +74,7 @@ class TriboContact:
         StateVector[time].AsperityLoad= 16/15*np.sqrt(2)*np.pi*(self.RoughnessParameter)**2*np.sqrt(self.Roughness/self.Kappa)*self.YoungsModulus*np.sqrt(self.Roughness*self.Engine.CompressionRing.Thickness**2/(4*self.Engine.CompressionRing.CrownHeight))*quad(self.I52,l_0,self.l_c,limit=50)[0]
         StateVector[time].AsperityFriction=self.Tau0*StateVector[time].AsperityArea/(np.pi*self.Engine.Cylinder.Radius*2)+self.f_b*StateVector[time].AsperityLoad
         
-        if StateVector[time].AsperityLoad==0.0
+        if StateVector[time].AsperityLoad==0.0:
             StateVector[time].AsperityContactPressure=0.0
         else:
             StateVector[time].AsperityContactPressure= StateVector[time].AsperityLoad/StateVector[time].AsperityArea
