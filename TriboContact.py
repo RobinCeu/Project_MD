@@ -108,10 +108,6 @@ class TriboContact:
         
       
         # Calculate The Wear Depth on the Cylinder wall
-        # array of unique Positions where the pistion passes by:
-        StateVector[time].WearLocationsCylinder= np.unique(np.round(Ops.PistonPosition,8)) 
-
-        StateVector[time].WearDepthCylinder= 35 #incremental wear depth on the positions in the array above
 
         t = 0
         b = 10e-6 # crownheight
@@ -119,8 +115,18 @@ class TriboContact:
 
         def integrand_generator(tijd):
             return self.StateVector[tijd].HertzianContactPressure*self.Ops.PistonVelocity/Solids('Grey Cast Iron').Hardness
+        
+        # array of unique Positions where the pistion passes by:
+        StateVector[time].WearLocationsCylinder= np.unique(np.round(Ops.PistonPosition,8)) # many, many points
 
 
+        #incremental wear depth on the positions in the array above
+        TimeStep = Time[1]-Time[0]
+        StateVector[time].WearDepthCylinder += TimeStep*self.WearCoefficient_Cylinder*StateVector[time].HertzianContactPressure*self.Ops.Pistonvelocity/self.Ops.PistonVelocity/Solids('Grey Cast Iron').Hardness
+
+
+
+        '''
         for i in range(len(StateVector[time].WearLocationsCylinder)):
             # If ring is currently over the point of intrest: add integrand and timestamp
             if self.Ops.PistonPosition[time] < StateVector[time].WearLocationsCylinder[i] +b/2 or  self.Ops.PistonPosition[time] >StateVector[time].WearLocationsCylinder[i] - b/2:
@@ -143,7 +149,7 @@ class TriboContact:
                     StateVector[time].WearDepthCylinder[i]  += (integrand_l[0][0]+integrand_l[1][0])/2*(integrand_l[1][1]-integrand_l[1][0])
                     integrand_l = []
         
-
+        '''
         
          #incremental wear depth on the positions in the array above
 
