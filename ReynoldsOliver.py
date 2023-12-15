@@ -15,6 +15,7 @@ import VisualLib as vis
 from scipy.sparse.linalg import inv
 from scipy.sparse.linalg import spsolve
 
+import copy as copy
 from scipy.interpolate import interp1d
 from scipy.integrate import quad
 
@@ -133,7 +134,7 @@ class ReynoldsSolver:
             h_Density = CurState.h*DensityFunc
 
             " squeeze term "
-            PrevState = StateVector[time-1]
+            PrevState = copy.deepcopy(StateVector[time-1])
             dt = self.Time.dt
             h_Density_Diff = (h_Density  - PrevState.h*PreviousDensity)/dt
 
@@ -183,7 +184,7 @@ class ReynoldsSolver:
             T_old = PrevState.Temperature
          
             " substitute the shear heating equation (23) "
-            Q = (CurState.h**2)*d_pressure**2/ViscosityFunc/12 + (ViscosityFunc*U**2)/CurState.h**2
+            Q = (CurState.h**2)*d_pressure**2/ViscosityFunc/12 + (ViscosityFunc*U**2)/(CurState.h**2)
 
             RHS_T = T_old + Q*dt/DensityFunc/SpecHeatFunc
 

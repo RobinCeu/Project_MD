@@ -165,7 +165,7 @@ else:
         Data2File={'State': StateVector[time]}
         IO.SaveData(FileName,Data2File)
 
-
+k = 0
 """Start Time Loop"""
 """Start Time Loop"""
 start_time = TimeKeeper.time()
@@ -199,6 +199,8 @@ while time<Time.nt-1:
 
         """d. update h0 with Quasi Newton method"""
         DW[i] = StateVector[time].HydrodynamicLoad + StateVector[time].AsperityLoad - Ops.CompressionRingLoad[time]
+        print('DW : ', DW[i], 'eps_h_0 : ',  eps_h_0)
+
         if i>0:
             h0[i+1] = max(h0[i]- UnderRelaxh0*(DW[i]/(DW[i]-DW[i-1]))*(h0[i]-h0[i-1]) , 0.1*Contact.Roughness)
         elif i==0:
@@ -230,12 +232,15 @@ while time<Time.nt-1:
     
     """Visual Output per time step""" 
     if VisualFeedbackLevel>0:
-        vis.Report_Ops(Time,Ops,time)
-        fig=vis.Report_PT(Grid,StateVector[time])
-        if SaveFig2File:
-            figname="Figures/PT@Time_"+str(round(Time.t[time]*1000,5))+"ms.png" 
-            fig.savefig(figname, dpi=300)
-        plt.close(fig)
+        k+= 1
+        if k%100 == 0:
+
+            vis.Report_Ops(Time,Ops,time)
+            fig=vis.Report_PT(Grid,StateVector[time])
+            if SaveFig2File:
+                figname="Figures/PT@Time_"+str(round(Time.t[time]*1000,5))+"ms.png" 
+                fig.savefig(figname, dpi=300)
+            plt.close(fig)
         
     
     

@@ -11,5 +11,5 @@ import numpy as np
 class Time:
     def __init__(self, tend: float=1.0, dt: float=0.001):
         self.dt = dt
-        self.t = np.arange(0.0,tend,dt);
+        self.t = np.arange(0.0,tend,dt)
         self.nt = np.size(self.t)
