@@ -159,7 +159,6 @@ class ReynoldsSolver:
             delta_P = np.maximum(P_sol,0)-P_old
             StateVector[time].Pressure = P_old + self.UnderRelaxP*delta_P
             
-
             "Create LHS = I+E+D"
             #5. LHS Temperature
             " set I "
@@ -174,7 +173,7 @@ class ReynoldsSolver:
             D1.data = (u_plus*dt)
             D2.data = (u_min*dt)
             D = D1 @ DDXBackward + D2 @ DDXForward
-
+            
             " set E "
             E.data = (ConducFunc*dt/DensityFunc/SpecHeatFunc)
 
@@ -207,7 +206,7 @@ class ReynoldsSolver:
             #8. Solve System for Temperature + Update
             T_sol = spsolve(M2,RHS_T)
             T_sol = np.maximum(np.minimum(T_sol,2*self.Ops.OilTemperature),self.Ops.OilTemperature)
-            delta_T = T_sol-T_old
+            delta_T = T_sol-StateVector[time].Temperature
             StateVector[time].Temperature += self.UnderRelaxT*delta_T
             
             

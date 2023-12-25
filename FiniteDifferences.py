@@ -80,7 +80,7 @@ class FiniteDifferences:
         self.D2DX2Forward[Grid.Nx-1,Grid.Nx-2] = -2.0/Grid.dx**2
         self.D2DX2Forward[Grid.Nx-1,Grid.Nx-1] = 1.0/Grid.dx**2
 
-
+    
 
     # Efficient Implementation for 1D csr type FD matrix
     #   do not Change implementation below!
@@ -96,3 +96,23 @@ class FiniteDifferences:
     def SetNeumannRight(self,M):
         M.data[[-3,-2,-1]]=self.ForwardStencilD
 
+    """
+
+
+    def SetDirichletLeft(self,M):
+        M.sort_indices()
+        M.data[M.indptr[0]:M.indptr[1]]=[1.0, 0.0, 0.0]
+
+    def SetDirichletRight(self,M):
+        M.sort_indices()
+        M.data[M.indptr[-2]:M.indptr[-1]]=[0.0, 0.0, 1.0]
+    
+    def SetNeumannLeft(self,M):
+        M.sort_indices()
+        M.data[M.indptr[0]:M.indptr[1]]=self.BackwardStencilD
+    
+    def SetNeumannRight(self,M):
+        M.sort_indices()
+        M.data[M.indptr[-2]:M.indptr[-1]]=self.ForwardStencilD
+
+    """

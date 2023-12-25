@@ -9,8 +9,7 @@ Created on Wed Oct 20 17:21:10 2021
 
 import numpy as np 
 import matplotlib.pyplot as plt
-
-
+plt.switch_backend('Agg')
     
 def Report_PT(Grid,State): # initiatlization
 

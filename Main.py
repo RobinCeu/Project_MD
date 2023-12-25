@@ -14,6 +14,7 @@ Import libraries
 import socket
 import sys
 
+
 hostname=socket.gethostname()
 Tier2List=['swallot', 'skitty', 'victini', 'slaking', 'kirlia', 'doduo']
 if any(list(i in hostname for i in Tier2List)):
@@ -46,10 +47,10 @@ import VisualLib as vis
 
 """General Settings for Input and Output """
 VisualFeedbackLevel=1 # [0,1,2,3] = [none, per time step, per load iteration, per # reynolds iterations]
-SaveFig2File=False # Save figures to file? True/False
+SaveFig2File=True # Save figures to file? True/False
 LoadInitialState=False # Load The IntialSate? True/False
 InitTime=0.0 #Initial Time to Load?
-SaveStates=False # Save States to File? True/False
+SaveStates=True # Save States to File? True/False
 
 """I/O Operator"""
 IO=IOHDF5()
@@ -199,7 +200,7 @@ while time<Time.nt-1:
 
         """d. update h0 with Quasi Newton method"""
         DW[i] = StateVector[time].HydrodynamicLoad + StateVector[time].AsperityLoad - Ops.CompressionRingLoad[time]
-        print('DW : ', DW[i], 'eps_h_0 : ',  eps_h_0)
+        #print('DW : ', DW[i], 'eps_h_0 : ',  eps_h_0)
 
         if i>0:
             h0[i+1] = max(h0[i]- UnderRelaxh0*(DW[i]/(DW[i]-DW[i-1]))*(h0[i]-h0[i-1]) , 0.1*Contact.Roughness)
@@ -209,7 +210,7 @@ while time<Time.nt-1:
             break
 
         StateVector[time].h0 = h0[i+1]
-
+        
         """update iteration parameters"""
         i += 1 
         eps_h_0[i] = np.abs(h0[i]/h0[i-1]-1)
@@ -232,17 +233,13 @@ while time<Time.nt-1:
     
     """Visual Output per time step""" 
     if VisualFeedbackLevel>0:
-        k+= 1
-        if k%100 == 0:
+        vis.Report_Ops(Time,Ops,time)
+        fig=vis.Report_PT(Grid,StateVector[time])
+        if SaveFig2File:
+            figname="Figures/PT@Time_"+str(round(Time.t[time]*1000,5))+"ms.png" 
+            fig.savefig(figname, dpi=300)
+        plt.close(fig)
 
-            vis.Report_Ops(Time,Ops,time)
-            fig=vis.Report_PT(Grid,StateVector[time])
-            if SaveFig2File:
-                figname="Figures/PT@Time_"+str(round(Time.t[time]*1000,5))+"ms.png" 
-                fig.savefig(figname, dpi=300)
-            plt.close(fig)
-        
-    
     
     """ Calculate Ohter Variables of Interest, e.g. COF wear"""
     #TODO
